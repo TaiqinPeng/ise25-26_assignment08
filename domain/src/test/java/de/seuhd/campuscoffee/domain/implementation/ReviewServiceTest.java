@@ -91,6 +91,36 @@ public class ReviewServiceTest {
         assertThat(approvedReview.approvalCount()).isEqualTo(review.approvalCount() + 1);
         assertThat(approvedReview.approved()).isTrue();
     }
+    @Test
+    void approvalNotSuccessfulIfQuorumNotReached() {
+        // given
+        Review review = TestFixtures.getReviewFixtures().getFirst().toBuilder()
+                .approvalCount(0)
+                .approved(false)
+                .build();
+
+        User user = TestFixtures.getUserFixtures().getLast();
+
+
+        when(userDataService.getById(user.getId())).thenReturn(user);
+
+        when(reviewDataService.getById(review.getId())).thenReturn(review);
+
+        when(reviewDataService.upsert(any(Review.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        // when
+        Review result = reviewService.approve(review, user.getId());
+
+        // then
+        assertThat(result.approvalCount())
+                .isEqualTo(review.approvalCount() + 1);
+        assertThat(result.approved()).isFalse();
+
+        verify(userDataService).getById(user.getId());
+        verify(reviewDataService).getById(review.getId());
+        verify(reviewDataService).upsert(any(Review.class));
+    }
 
     @Test
     void getApprovedByPos() {
